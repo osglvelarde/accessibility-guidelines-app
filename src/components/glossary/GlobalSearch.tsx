@@ -55,7 +55,8 @@ export const GlobalSearch = ({ data, onResultClick }: GlobalSearchProps) => {
           { field: 'pdfuaFixingSuggestions', value: row.pdfuaFixingSuggestions || '', priority: fieldPriority.pdfuaFixingSuggestions || 0 },
         ];
 
-        let bestMatch: { field: string; value: string; priority: number; snippet: string } | null = null;
+        type BestMatch = { field: string; value: string; priority: number; snippet: string };
+        let bestMatch: BestMatch | null = null;
         let bestPriority = -1;
 
         // Find the best match for this row
@@ -92,13 +93,14 @@ export const GlobalSearch = ({ data, onResultClick }: GlobalSearchProps) => {
         // Only add one result per row (the best match)
         if (bestMatch !== null) {
           const resultKey = row.id;
+          const match: BestMatch = bestMatch;
           
           // Store the result (will overwrite if same row appears in multiple tabs, keeping best match)
           searchResults.set(resultKey, {
             row,
             tabName: tab.name,
-            matchedField: bestMatch.field,
-            snippet: bestMatch.snippet
+            matchedField: match.field,
+            snippet: match.snippet
           });
         }
       });
