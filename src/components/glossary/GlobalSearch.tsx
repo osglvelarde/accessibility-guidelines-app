@@ -90,7 +90,7 @@ export const GlobalSearch = ({ data, onResultClick }: GlobalSearchProps) => {
         });
 
         // Only add one result per row (the best match)
-        if (bestMatch) {
+        if (bestMatch !== null) {
           const resultKey = row.id;
           
           // Store the result (will overwrite if same row appears in multiple tabs, keeping best match)
@@ -108,8 +108,8 @@ export const GlobalSearch = ({ data, onResultClick }: GlobalSearchProps) => {
     const sortedResults = Array.from(searchResults.values())
       .sort((a, b) => {
         // Sort by priority of matched field
-        const priorityA = fieldPriority[a.matchedField] || 0;
-        const priorityB = fieldPriority[b.matchedField] || 0;
+        const priorityA = fieldPriority[a.matchedField as string] || 0;
+        const priorityB = fieldPriority[b.matchedField as string] || 0;
         
         if (priorityB !== priorityA) {
           return priorityB - priorityA;
