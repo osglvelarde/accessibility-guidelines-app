@@ -146,11 +146,35 @@ export async function exportToPDF(
   filterText?: string
 ): Promise<void> {
   // Dynamic import for client-side only
-  const { default: jsPDF } = await import('jspdf');
-  // jspdf-autotable extends jsPDF prototype, so we just import it
-  await import('jspdf-autotable');
+  const [{ default: jsPDF }, autoTableModule] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable')
+  ]);
   
   const doc = new jsPDF();
+  
+  // jspdf-autotable v5 exports as a default function
+  // Try multiple ways to get the autoTable function
+  let autoTableFunc: any;
+  
+  // Method 1: Check if it extends the prototype (older versions)
+  if ((doc as any).autoTable && typeof (doc as any).autoTable === 'function') {
+    autoTableFunc = (doc as any).autoTable;
+  }
+  // Method 2: Get default export (newer versions)
+  else if ((autoTableModule as any).default && typeof (autoTableModule as any).default === 'function') {
+    autoTableFunc = (autoTableModule as any).default;
+  }
+  // Method 3: Module itself is the function
+  else if (typeof autoTableModule === 'function') {
+    autoTableFunc = autoTableModule;
+  }
+  else {
+    throw new Error('Could not load autoTable from jspdf-autotable. Please ensure it is properly installed.');
+  }
+  
+  // Use autoTableFunc directly - it should be a function that takes (doc, options)
+  const tableFunction = autoTableFunc;
   
   // Add title
   doc.setFontSize(16);
@@ -187,8 +211,9 @@ export async function exportToPDF(
     })
   );
   
-  // Add main table
-  (doc as any).autoTable({
+  // Add main table - call autoTable with doc and options
+  if (typeof tableFunction === 'function') {
+    tableFunction(doc, {
     head: [headers],
     body: tableData,
     startY: filterText ? 38 : 33,
@@ -214,7 +239,10 @@ export async function exportToPDF(
         data.cell.styles.cellWidth = 'auto';
       }
     }
-  });
+    });
+  } else {
+    throw new Error('autoTable function is not available');
+  }
   
   // Add expanded details for expanded rows
   if (expandedRows.size > 0) {
