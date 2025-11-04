@@ -1,25 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ExpandedRowDetails } from './ExpandedRowDetails';
 import { TableRowComponent } from './TableRowComponent';
 import { TableHeaderRow } from './TableHeaderRow';
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Search, FileText, FileSpreadsheet } from 'lucide-react';
 import { GlossaryRow } from '@/lib/types/glossary';
+import { exportToPDF, exportToCSV } from '@/lib/export-utils';
 
 interface GlossaryTableProps {
   rows: GlossaryRow[];
   highlightedRowId?: string;
   onRowExpand: (rowId: string) => void;
   expandedRowId?: string;
+  tableName: string;
+  category: string;
 }
 
 export const GlossaryTable = ({
   rows,
   highlightedRowId,
   onRowExpand,
-  expandedRowId
+  expandedRowId,
+  tableName,
+  category
 }: GlossaryTableProps) => {
   const [tableFilter, setTableFilter] = useState('');
   const [sortField, setSortField] = useState<string>('columnName');
@@ -145,9 +150,49 @@ export const GlossaryTable = ({
     console.log(`${label} copied to clipboard`);
   };
 
+  // Prepare expanded rows map for export
+  const expandedRowsMap = useMemo(() => {
+    const map = new Map<string, GlossaryRow>();
+    if (expandedRowId) {
+      const expandedRow = sortedRows.find(r => r.id === expandedRowId);
+      if (expandedRow) {
+        map.set(expandedRowId, expandedRow);
+      }
+    }
+    return map;
+  }, [expandedRowId, sortedRows]);
+
+  // Handle PDF export
+  const handleExportPDF = async () => {
+    try {
+      await exportToPDF(
+        sortedRows, // Export all filtered/sorted rows, not just paginated
+        columns,
+        category,
+        tableName,
+        expandedRowsMap,
+        tableFilter || undefined
+      );
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      alert('Failed to export PDF. Please try again.');
+    }
+  };
+
+  // Handle CSV export
+  const handleExportCSV = () => {
+    exportToCSV(
+      sortedRows, // Export all filtered/sorted rows, not just paginated
+      columns,
+      category,
+      tableName,
+      expandedRowsMap
+    );
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
@@ -159,6 +204,26 @@ export const GlossaryTable = ({
         </div>
         <div className="text-sm text-muted-foreground">
           {sortedRows.length} of {rows.length} items
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPDF}
+            className="gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            Export PDF
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCSV}
+            className="gap-2"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Export CSV
+          </Button>
         </div>
       </div>
 

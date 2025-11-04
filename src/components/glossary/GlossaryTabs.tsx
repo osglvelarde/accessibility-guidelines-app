@@ -67,6 +67,8 @@ export const GlossaryTabs = ({
               highlightedRowId={highlightedRowId}
               onRowExpand={onRowExpand}
               expandedRowId={expandedRowId}
+              tableName={tab.name}
+              category={tab.id}
             />
           </div>
         </TabsContent>
